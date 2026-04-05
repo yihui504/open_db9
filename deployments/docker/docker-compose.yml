@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  db9-server:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-db9}
+      - DB_PASSWORD=${DB_PASSWORD:-db9-local-password}
+      - DB_NAME=${DB_NAME:-db9}
+      - AUTH_SECRET=${AUTH_SECRET:-change-this-local-auth-secret-32chars}
+      - JWT_SECRET=${JWT_SECRET:-change-this-local-jwt-secret-32chars}
+      - DB9_FS9_URL=http://fs9-service:9090
+    depends_on:
+      - postgres
+      - fs9-service
+    networks:
+      - db9-network
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_USER=${DB_USER:-db9}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-db9-local-password}
+      - POSTGRES_DB=${DB_NAME:-db9}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../../migrations/control:/migrations/control:ro
+      - ./postgres-init/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    networks:
+      - db9-network
+
+  fs9-service:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    command: ["./fs9-service"]
+    environment:
+      - FS9_SERVICE_PORT=9090
+      - STORAGE_PATH=/data/fs9
+    ports:
+      - "9090:9090"
+    volumes:
+      - fs9-data:/data/fs9
+    networks:
+      - db9-network
+
+  rag:
+    build:
+      context: ../../
+      dockerfile: rag/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - RAG_DB_HOST=postgres
+      - RAG_DB_PORT=5432
+      - RAG_DB_USER=${DB_USER:-db9}
+      - RAG_DB_PASSWORD=${DB_PASSWORD:-db9-local-password}
+      - RAG_DB_NAME=${DB_NAME:-db9}
+      - RAG_PROVIDER=${RAG_PROVIDER:-zhipuai}
+      - RAG_OPENAI_API_KEY=${RAG_OPENAI_API_KEY:-}
+      - RAG_ZHIPUAI_API_KEY=${RAG_ZHIPUAI_API_KEY:-}
+      - RAG_JWT_SECRET=${JWT_SECRET:-change-this-local-jwt-secret-32chars}
+      - RAG_DB9_API_URL=http://db9-server:8080
+      - RAG_FS9_URL=http://fs9-service:9090
+    depends_on:
+      - postgres
+      - db9-server
+      - fs9-service
+    networks:
+      - db9-network
+
+volumes:
+  postgres-data:
+  fs9-data:
+
+networks:
+  db9-network:
+    driver: bridge

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_oh-my-claudecode_t__lsp_diagnostics",
+      "mcp__plugin_oh-my-claudecode_t__ast_grep_search"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\11428\\.claude\\teams\\open-db9-phase3-4"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "mcp__plugin_oh-my-claudecode_t__state_write",
+      "mcp__plugin_oh-my-claudecode_t__notepad_write_working",
+      "mcp__plugin_oh-my-claudecode_t__notepad_read",
+      "mcp__plugin_oh-my-claudecode_t__lsp_diagnostics_directory"
+    ]
+  }
+}

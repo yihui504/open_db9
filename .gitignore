@@ -1,0 +1,59 @@
+# Binaries
+build/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+db9
+db9-server
+
+# Test files
+coverage.out
+coverage.html
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# OMC tool state
+.omc/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
