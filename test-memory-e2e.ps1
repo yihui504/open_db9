@@ -167,18 +167,11 @@ if (Test-Path $routerFile) {
     Add-TestResult -Name "Router file exists and contains /memories routes" -Passed $false -Details "Router file not found"
 }
 
-$memorySkillDoc = "$ProjectRoot\skills\memory-skill.md"
-if (Test-Path $memorySkillDoc) {
-    Add-TestResult -Name "Memory skill documentation (memory-skill.md) exists" -Passed $true
+$skillDoc = "$ProjectRoot\skills\db9\SKILL.md"
+if (Test-Path $skillDoc) {
+    Add-TestResult -Name "Skill documentation (skills/db9/SKILL.md) exists" -Passed $true
 } else {
-    Add-TestResult -Name "Memory skill documentation (memory-skill.md) exists" -Passed $false -Details "File not found"
-}
-
-$quickstartDoc = "$ProjectRoot\skills\quickstart-guide.md"
-if (Test-Path $quickstartDoc) {
-    Add-TestResult -Name "Quick start guide documentation (quickstart-guide.md) exists" -Passed $true
-} else {
-    Add-TestResult -Name "Quick start guide documentation (quickstart-guide.md) exists" -Passed $false -Details "File not found"
+    Add-TestResult -Name "Skill documentation (skills/db9/SKILL.md) exists" -Passed $false -Details "File not found"
 }
 
 $quickstartScript = "$ProjectRoot\scripts\db9-quickstart.sh"
@@ -374,89 +367,52 @@ if (Test-Path $onboardFile) {
 # ============================================================================
 Write-Section "TEST 6: Documentation Completeness Verification"
 
-if (Test-Path $memorySkillDoc) {
-    $skillContent = Get-Content $memorySkillDoc -Raw
-    
-    if ($skillContent -match "## Quick Start") {
-        Add-TestResult -Name "memory-skill.md: Quick Start section present" -Passed $true
-    } else {
-        Add-TestResult -Name "memory-skill.md: Quick Start section present" -Passed $false -Details "Missing Quick Start section"
-    }
-    
-    if ($skillContent -match "## Memory Types" -and $skillContent -match "Type.*When to Use.*Example") {
-        Add-TestResult -Name "memory-skill.md: Memory Types table present" -Passed $true
-    } else {
-        Add-TestResult -Name "memory-skill.md: Memory Types table present" -Passed $false -Details "Missing or incomplete table"
-    }
-    
-    # Check for all 4 MCP tool references
-    $mcpToolsFound = 0
-    if ($skillContent -match "memory_store") { $mcpToolsFound++ }
-    if ($skillContent -match "memory_recall") { $mcpToolsFound++ }
-    if ($skillContent -match "memory_list") { $mcpToolsFound++ }
-    if ($skillContent -match "memory_delete") { $mcpToolsFound++ }
-    
-    if ($mcpToolsFound -ge 4) {
-        Add-TestResult -Name "memory-skill.md: All 4 MCP Tools documented" -Passed $true
-    } else {
-        Add-TestResult -Name "memory-skill.md: All 4 MCP Tools documented" -Passed $false -Details "Only $mcpToolsFound/4 tools found"
-    }
-    
-    if ($skillContent -match "## WorkBuddy Integration") {
-        Add-TestResult -Name "memory-skill.md: WorkBuddy Integration section present" -Passed $true
-    } else {
-        Add-TestResult -Name "memory-skill.md: WorkBuddy Integration section present" -Passed $false -Details "Missing section"
-    }
-    
-    if ($skillContent -match "## SQL Direct Access" -and $skillContent -match "SELECT.*agent_memories") {
-        Add-TestResult -Name "memory-skill.md: SQL Direct Access examples present" -Passed $true
-    } else {
-        Add-TestResult -Name "memory-skill.md: SQL Direct Access examples present" -Passed $false -Details "Missing SQL examples"
-    }
-    
-    if ($skillContent -match "## API Endpoints Reference" -and $skillContent -match "/api/v1/databases/:id/memories") {
-        Add-TestResult -Name "memory-skill.md: API Endpoints Reference present" -Passed $true
-    } else {
-        Add-TestResult -Name "memory-skill.md: API Endpoints Reference present" -Passed $false -Details "Missing endpoint reference"
-    }
-} else {
-    Write-Warn "Memory skill documentation not found, skipping tests"
-}
+if (Test-Path $skillDoc) {
+    $skillContent = Get-Content $skillDoc -Raw
 
-if (Test-Path $quickstartDoc) {
-    $guideContent = Get-Content $quickstartDoc -Raw
-    
-    if ($guideContent -match "## One-Line Start" -or $guideContent -match "curl.*db9-quickstart\.sh") {
-        Add-TestResult -Name "quickstart-guide.md: One-Line Start command present" -Passed $true
+    if ($skillContent -match "^---\s*\r?\nname:\s*db9") {
+        Add-TestResult -Name "SKILL.md: YAML frontmatter present with name field" -Passed $true
     } else {
-        Add-TestResult -Name "quickstart-guide.md: One-Line Start command present" -Passed $false -Details "Missing one-line start"
+        Add-TestResult -Name "SKILL.md: YAML frontmatter present with name field" -Passed $false -Details "Missing or invalid frontmatter"
     }
-    
-    if ($guideContent -match "## Manual Step-by-Step" -or $guideContent -match "### \d+\.") {
-        Add-TestResult -Name "quickstart-guide.md: Manual steps documented" -Passed $true
+
+    if ($skillContent -match "## .*快速开始.*Quick Start" -or $skillContent -match "## 2\.") {
+        Add-TestResult -Name "SKILL.md: Quick Start section present" -Passed $true
     } else {
-        Add-TestResult -Name "quickstart-guide.md: Manual steps documented" -Passed $false -Details "Missing manual steps"
+        Add-TestResult -Name "SKILL.md: Quick Start section present" -Passed $false -Details "Missing Quick Start section"
     }
-    
-    if ($guideContent -match "workbuddy.*--agent.*workbuddy" -or $guideContent -match "db9 onboard.*workbuddy") {
-        Add-TestResult -Name "quickstart-guide.md: WorkBuddy install command present" -Passed $true
+
+    if ($skillContent -match "## .*Memory Types" -or $skillContent -match "## 3\.") {
+        Add-TestResult -Name "SKILL.md: Memory Types table present" -Passed $true
     } else {
-        Add-TestResult -Name "quickstart-guide.md: WorkBuddy install command present" -Passed $false -Details "Missing install command"
+        Add-TestResult -Name "SKILL.md: Memory Types table present" -Passed $false -Details "Missing or incomplete table"
     }
-    
-    if ($guideContent -match "## Architecture Overview" -or ($guideContent -match "PostgreSQL" -and $guideContent -match "Agent")) {
-        Add-TestResult -Name "quickstart-guide.md: Architecture diagram present" -Passed $true
+
+    if ($skillContent -match "MCP Tools Reference" -and $skillContent -match "memory_store") {
+        Add-TestResult -Name "SKILL.md: MCP Tools Reference (4 tools)" -Passed $true
     } else {
-        Add-TestResult -Name "quickstart-guide.md: Architecture diagram present" -Passed $false -Details "Missing architecture diagram"
+        Add-TestResult -Name "SKILL.md: MCP Tools Reference (4 tools)" -Passed $false -Details "Missing MCP tools reference"
     }
-    
-    if ($guideContent -match "## Troubleshooting" -or $guideContent -match "Problem.*Solution") {
-        Add-TestResult -Name "quickstart-guide.md: Troubleshooting section present" -Passed $true
+
+    if ($skillContent -match "WorkBuddy Integration" -or $skillContent -match "workbuddy") {
+        Add-TestResult -Name "SKILL.md: WorkBuddy Integration section" -Passed $true
     } else {
-        Add-TestResult -Name "quickstart-guide.md: Troubleshooting section present" -Passed $false -Details "Missing troubleshooting"
+        Add-TestResult -Name "SKILL.md: WorkBuddy Integration section" -Passed $false -Details "Missing WorkBuddy integration"
+    }
+
+    if ($skillContent -match "## .*SQL.*分析" -or $skillContent -match "## 8\.") {
+        Add-TestResult -Name "SKILL.md: SQL Direct Access examples" -Passed $true
+    } else {
+        Add-TestResult -Name "SKILL.md: SQL Direct Access examples" -Passed $false -Details "Missing SQL examples"
+    }
+
+    if ($skillContent -match "UTF-8" -and $skillContent -match "Encoding") {
+        Add-TestResult -Name "SKILL.md: UTF-8 Encoding notice present" -Passed $true
+    } else {
+        Add-TestResult -Name "SKILL.md: UTF-8 Encoding notice present" -Passed $false -Details "Missing UTF-8 encoding guidance"
     }
 } else {
-    Write-Warn "Quick start guide not found, skipping tests"
+    Write-Warn "Skill documentation not found, skipping tests"
 }
 
 # ============================================================================

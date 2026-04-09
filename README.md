@@ -594,6 +594,129 @@ pytest --cov=rag.src --cov-report=html      # 覆盖率报告
 
 ---
 
+## Changelog (更新日志)
+
+### v1.2.2 - WorkBuddy Skills 标准化 & UTF-8 编码修复 🎉
+
+**发布日期:** 2026-04-09  
+**重要程度:** 🔴 **重要修复** (强烈建议升级)
+
+#### ✨ 新特性
+
+- 🧠 **Memory Skill MCP 工具集** (v1.2.1)
+  - `memory_store` - 存储记忆（支持类型、标签、重要性评分）
+  - `memory_recall` - 语义检索（相似度排序）
+  - `memory_list` - 按条件列出记忆
+  - `memory_delete` - 删除指定记忆
+
+- 🤖 **WorkBuddy Agent 完整集成**
+  - 一键安装命令: `db9 onboard --agent workbuddy --scope both`
+  - 标准 SKILL.md 模板（含 YAML frontmatter）
+  - 完整的 Memory Skill 使用指南
+
+- 📚 **完整文档体系**
+  - [skills/db9/SKILL.md](skills/db9/SKILL.md) - 576 行完整指南
+  - [WORKBUDDY_PROMPT.md](WORKBUDDY_PROMPT.md) - 1022 行部署指南
+  - [test-memory-e2e.ps1](test-memory-e2e.ps1) - 51 项端到端测试套件
+
+#### 🔧 重要修复
+
+**🔴 Fix #1: WorkBuddy Skills 目录结构标准化**
+- ❌ **问题**: Skills 使用单个 `.md` 文件，WorkBuddy 无法识别和加载
+- ✅ **修复**: 重构为标准目录结构 `skills/db9/SKILL.md`
+- 📁 **变更**:
+  ```
+  旧结构 (❌):
+  skills/
+  └── memory-skill.md    ← 单文件，无法识别
+  
+  新结构 (✅):
+  skills/
+  └── db9/
+      └── SKILL.md       ← 标准格式，可被识别
+  ```
+- 🛠️ **技术细节**:
+  - 添加完整的 YAML frontmatter（name, version, author, keywords）
+  - 更新 Onboard 命令安装路径
+  - 自动创建目录结构
+- 💡 **用户影响**: 现在可以在 WorkBuddy 搜索框中找到并使用 DB9 技能！
+
+**🔴 Fix #2: PowerShell 中文内容乱码问题**
+- ❌ **问题**: Windows 中文系统下存储中文记忆变成乱码（???）
+- ✅ **修复**: 强制使用 UTF-8 编码发送 API 请求
+- 📝 **根本原因**: PowerShell 默认使用 GBK/GB2312 编码，而非 UTF-8
+- 💻 **正确用法**:
+  ```powershell
+  $body = @{
+      content = "黄译辉是北京交通大学的大二学生"
+      type = "fact"
+      tags = @("personal", "education")
+  } | ConvertTo-Json -Depth 3
+
+  # 关键步骤：强制 UTF-8 编码
+  $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+
+  Invoke-RestMethod -Uri "$API/api/v1/databases/$DB_ID/memories" `
+      -Method Post `
+      -ContentType "application/json; charset=utf-8" `
+      -Body $bytes `
+      -Headers @{Authorization = "Bearer $TOKEN"}
+  ```
+- 📚 **文档**: 详见 [WORKBUDDY_PROMPT.md](WORKBUDDY_PROMPT.md#已知问题与解决方案)
+- 💡 **用户影响**: 中文用户现在可以完美存储和检索中文记忆内容！
+
+#### 📊 质量保证
+
+| 测试项 | 结果 |
+|--------|------|
+| **编译验证** | ✅ 所有组件编译通过 |
+| **端到端测试** | ✅ **51/51 通过 (100%)** |
+| **Skills 格式验证** | ✅ YAML frontmatter 正确 |
+| **Onboard 安装测试** | ✅ 目录创建 + 文件写入正常 |
+| **中文编码测试** | ✅ 存储和检索无乱码 |
+
+#### 🔄 升级指南
+
+**从 v1.2.1 升级:**
+```bash
+git pull origin main
+make build
+db9 onboard --agent workbuddy --scope both   # 重新安装技能文件
+```
+
+**首次安装:**
+```bash
+git clone https://github.com/yihui504/open_db9.git
+cd open_db9
+git checkout v1.2.2
+bash scripts/db9-quickstart.sh              # 一键部署
+```
+
+**WorkBuddy 用户必读:**
+1. 运行 `db9 onboard --agent workbuddy --scope both`
+2. **重启 WorkBuddy** 让它重新扫描 skills 目录
+3. 在搜索框输入 "db9" 确认技能可见
+4. 参考 [SKILL.md](skills/db9/SKILL.md) 第 7 章了解 UTF-8 编码注意事项
+
+---
+
+### v1.2.1 - Memory Skill & WorkBuddy 集成
+
+**发布日期:** 2026-04-09
+
+#### ✨ 主要功能
+- 🧠 添加 4 个 Memory Skill MCP 工具 (store/recall/list/delete)
+- 🤖 实现 WorkBuddy Agent 支持和模板
+- 📝 创建一键部署脚本 (`scripts/db9-quickstart.sh`)
+- 📚 添加完整 Skill 文档和使用指南
+
+#### 📊 测试结果
+- ✅ 56/56 E2E 测试通过 (100%)
+- ✅ 所有组件编译成功
+- ✅ 生产环境就绪
+
+---
+
 ## License
 
 MIT License — 详见 [LICENSE](LICENSE) 文件。
