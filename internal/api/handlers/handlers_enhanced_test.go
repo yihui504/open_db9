@@ -962,7 +962,7 @@ func TestFileMetadata_Structure(t *testing.T) {
 	now := time.Now()
 	metadata := FileMetadata{
 		ID:          1,
-		DatabaseID:  100,
+		DatabaseID:  "100",
 		Path:        "/test/path/file.txt",
 		Name:        "file.txt",
 		Size:        1024,
@@ -973,7 +973,7 @@ func TestFileMetadata_Structure(t *testing.T) {
 	}
 
 	assert.Equal(t, 1, metadata.ID)
-	assert.Equal(t, 100, metadata.DatabaseID)
+	assert.Equal(t, "100", metadata.DatabaseID)
 	assert.Equal(t, "/test/path/file.txt", metadata.Path)
 	assert.Equal(t, "file.txt", metadata.Name)
 	assert.Equal(t, int64(1024), metadata.Size)

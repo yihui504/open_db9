@@ -15,11 +15,12 @@ import (
 
 // Agent type constants
 const (
-	AgentClaude   = "claude"
-	AgentCursor   = "cursor"
-	AgentCline    = "cline"
-	AgentCodex    = "codex"
-	AgentOpenCode = "opencode"
+	AgentClaude    = "claude"
+	AgentCursor    = "cursor"
+	AgentCline     = "cline"
+	AgentCodex     = "codex"
+	AgentOpenCode  = "opencode"
+	AgentWorkBuddy = "workbuddy"
 )
 
 // Scope constants
@@ -97,15 +98,25 @@ var supportedAgents = map[string]AgentInfo{
 			Project: filepath.Join(".opencode", "commands", "db9.md"),
 		},
 	},
+	AgentWorkBuddy: {
+		Name:        AgentWorkBuddy,
+		DisplayName: "WorkBuddy / OpenClaw",
+		Description: "Open-source AI coding assistant (OpenClaw family)",
+		Paths: InstallPath{
+			User:    filepath.Join(".workbuddy", "skills", "db9.md"),
+			Project: filepath.Join(".workbuddy", "skills", "db9.md"),
+		},
+	},
 }
 
 // Template definitions for each agent
 var agentTemplates = map[string]string{
-	AgentClaude:   "# DB9 Database Commands\n\nYou have access to the db9 CLI tool for database management.\n\n## Common Commands\n\n### Create a new database\n```bash\ndb9 create --name <database-name>\n```\n\n### Execute SQL\n```bash\ndb9 sql <database-id> \"<SQL query>\"\n```\n\n### File operations\n```bash\ndb9 fs upload <database-id> <local-path> <remote-path>\ndb9 fs download <database-id> <remote-path> <local-path>\ndb9 fs list <database-id> [path]\n```\n\n### Snapshot management\n```bash\ndb9 snapshot create <database-id> --name <snapshot-name>\ndb9 snapshot list <database-id>\ndb9 snapshot restore <database-id> <snapshot-id>\n```\n\n### Branch management\n```bash\ndb9 branch create <database-id> --name <branch-name>\ndb9 branch list <database-id>\ndb9 branch delete <database-id> <branch-id>\n```\n\n### Generate types\n```bash\ndb9 gen types <database-id> ./types --language ts\n```\n\n## Best Practices\n- Always use parameterized queries ($1, $2) to prevent SQL injection\n- Use snapshots before making schema changes\n- Use branches for experimental features\n- Check connection with `db9 status` before operations\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
-	AgentCursor:   "# Open-DB9 Rules\n\nWhen working with databases in this project, use the db9 CLI tool:\n\n1. **Database Creation**: Use `db9 create` for new databases\n2. **SQL Execution**: Use `db9 sql` for queries (never connect directly)\n3. **File Storage**: Use `db9 fs upload/download/list` for file operations\n4. **Snapshots**: Always snapshot before migrations\n5. **Branches**: Use branches for feature development\n6. **Type Safety**: Generate types with `db9 gen types`\n\nNever hardcode connection strings. Always use db9 CLI.\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
-	AgentCline:    "# Open-DB9 Rules\n\nWhen working with databases in this project, use the db9 CLI tool:\n\n1. **Database Creation**: Use `db9 create` for new databases\n2. **SQL Execution**: Use `db9 sql` for queries (never connect directly)\n3. **File Storage**: Use `db9 fs upload/download/list` for file operations\n4. **Snapshots**: Always snapshot before migrations\n5. **Branches**: Use branches for feature development\n6. **Type Safety**: Generate types with `db9 gen types`\n\nNever hardcode connection strings. Always use db9 CLI.\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
-	AgentCodex:    "# DB9 Database Commands\n\nYou have access to the db9 CLI tool for database management.\n\n## Common Commands\n\n### Create a new database\n```bash\ndb9 create --name <database-name>\n```\n\n### Execute SQL\n```bash\ndb9 sql <database-id> \"<SQL query>\"\n```\n\n### File operations\n```bash\ndb9 fs upload <database-id> <local-path> <remote-path>\ndb9 fs download <database-id> <remote-path> <local-path>\ndb9 fs list <database-id> [path]\n```\n\n### Snapshot management\n```bash\ndb9 snapshot create <database-id> --name <snapshot-name>\ndb9 snapshot list <database-id>\ndb9 snapshot restore <database-id> <snapshot-id>\n```\n\n## Best Practices\n- Always use parameterized queries ($1, $2) to prevent SQL injection\n- Use snapshots before making schema changes\n- Check connection with `db9 status` before operations\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
-	AgentOpenCode: "# DB9 Database Commands\n\nYou have access to the db9 CLI tool for database management.\n\n## Common Commands\n\n### Create a new database\n```bash\ndb9 create --name <database-name>\n```\n\n### Execute SQL\n```bash\ndb9 sql <database-id> \"<SQL query>\"\n```\n\n### File operations\n```bash\ndb9 fs upload <database-id> <local-path> <remote-path>\ndb9 fs download <database-id> <remote-path> <local-path>\ndb9 fs list <database-id> [path]\n```\n\n### Snapshot management\n```bash\ndb9 snapshot create <database-id> --name <snapshot-name>\ndb9 snapshot list <database-id>\ndb9 snapshot restore <database-id> <snapshot-id>\n```\n\n### Generate types\n```bash\ndb9 gen types <database-id> ./types --language ts\n```\n\n## Best Practices\n- Always use parameterized queries ($1, $2) to prevent SQL injection\n- Use snapshots before making schema changes\n- Check connection with `db9 status` before operations\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
+	AgentClaude:    "# DB9 Database Commands\n\nYou have access to the db9 CLI tool for database management.\n\n## Common Commands\n\n### Create a new database\n```bash\ndb9 create --name <database-name>\n```\n\n### Execute SQL\n```bash\ndb9 sql <database-id> \"<SQL query>\"\n```\n\n### File operations\n```bash\ndb9 fs upload <database-id> <local-path> <remote-path>\ndb9 fs download <database-id> <remote-path> <local-path>\ndb9 fs list <database-id> [path]\n```\n\n### Snapshot management\n```bash\ndb9 snapshot create <database-id> --name <snapshot-name>\ndb9 snapshot list <database-id>\ndb9 snapshot restore <database-id> <snapshot-id>\n```\n\n### Branch management\n```bash\ndb9 branch create <database-id> --name <branch-name>\ndb9 branch list <database-id>\ndb9 branch delete <database-id> <branch-id>\n```\n\n### Generate types\n```bash\ndb9 gen types <database-id> ./types --language ts\n```\n\n## Best Practices\n- Always use parameterized queries ($1, $2) to prevent SQL injection\n- Use snapshots before making schema changes\n- Use branches for experimental features\n- Check connection with `db9 status` before operations\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
+	AgentCursor:    "# Open-DB9 Rules\n\nWhen working with databases in this project, use the db9 CLI tool:\n\n1. **Database Creation**: Use `db9 create` for new databases\n2. **SQL Execution**: Use `db9 sql` for queries (never connect directly)\n3. **File Storage**: Use `db9 fs upload/download/list` for file operations\n4. **Snapshots**: Always snapshot before migrations\n5. **Branches**: Use branches for feature development\n6. **Type Safety**: Generate types with `db9 gen types`\n\nNever hardcode connection strings. Always use db9 CLI.\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
+	AgentCline:     "# Open-DB9 Rules\n\nWhen working with databases in this project, use the db9 CLI tool:\n\n1. **Database Creation**: Use `db9 create` for new databases\n2. **SQL Execution**: Use `db9 sql` for queries (never connect directly)\n3. **File Storage**: Use `db9 fs upload/download/list` for file operations\n4. **Snapshots**: Always snapshot before migrations\n5. **Branches**: Use branches for feature development\n6. **Type Safety**: Generate types with `db9 gen types`\n\nNever hardcode connection strings. Always use db9 CLI.\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
+	AgentCodex:     "# DB9 Database Commands\n\nYou have access to the db9 CLI tool for database management.\n\n## Common Commands\n\n### Create a new database\n```bash\ndb9 create --name <database-name>\n```\n\n### Execute SQL\n```bash\ndb9 sql <database-id> \"<SQL query>\"\n```\n\n### File operations\n```bash\ndb9 fs upload <database-id> <local-path> <remote-path>\ndb9 fs download <database-id> <remote-path> <local-path>\ndb9 fs list <database-id> [path]\n```\n\n### Snapshot management\n```bash\ndb9 snapshot create <database-id> --name <snapshot-name>\ndb9 snapshot list <database-id>\ndb9 snapshot restore <database-id> <snapshot-id>\n```\n\n## Best Practices\n- Always use parameterized queries ($1, $2) to prevent SQL injection\n- Use snapshots before making schema changes\n- Check connection with `db9 status` before operations\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
+	AgentOpenCode:  "# DB9 Database Commands\n\nYou have access to the db9 CLI tool for database management.\n\n## Common Commands\n\n### Create a new database\n```bash\ndb9 create --name <database-name>\n```\n\n### Execute SQL\n```bash\ndb9 sql <database-id> \"<SQL query>\"\n```\n\n### File operations\n```bash\ndb9 fs upload <database-id> <local-path> <remote-path>\ndb9 fs download <database-id> <remote-path> <local-path>\ndb9 fs list <database-id> [path]\n```\n\n### Snapshot management\n```bash\ndb9 snapshot create <database-id> --name <snapshot-name>\ndb9 snapshot list <database-id>\ndb9 snapshot restore <database-id> <snapshot-id>\n```\n\n### Generate types\n```bash\ndb9 gen types <database-id> ./types --language ts\n```\n\n## DB9 Memory Skill - Persistent Agent Memory\n\nUse these tools for persistent, searchable memory (better than memory.md):\n\n### Store a memory\n- MCP: `memory_store(content=\"...\", type=\"preference\", tags=[\"tech\"])\n- API: POST /api/v1/databases/:id/memories\n\n### Recall memories (semantic search)\n- MCP: `memory_recall(query=\"user preference\")`\n- API: POST /api/v1/databases/:id/memories/recall\n\n### List memories\n- MCP: `memory_list(agent_id=\"my-agent\")`\n- API: GET /api/v1/databases/:id/memories\n\nMemory types: fact, preference, context, decision, error, observation, plan\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
+	AgentWorkBuddy: "# Open-DB9 Skills for WorkBuddy\n\nYou have access to the db9 CLI tool and MCP Server for database management.\n\n## Core Commands\n\n```bash\ndb9 create --name mydb          # Create database\ndb9 sql 1 \"SELECT * FROM users\" # Execute SQL\ndb9 fs upload 1 file.txt /data/  # Upload files\ndb9 snapshot create 1 --name backup\n```\n\n## DB9 Memory Skill - Your Persistent Memory Layer\n\nReplace memory.md with structured, searchable memory:\n\n### Store a memory\n```bash\ncurl -X POST $API/api/v1/databases/$DB_ID/memories \\\n  -H \"Authorization: Bearer $TOKEN\" \\\n  -d '{\"content\":\"User prefers TypeScript\",\"type\":\"preference\",\"tags\":[\"tech\"]}'\n```\n\n### Semantic recall\n```bash\ncurl -X POST $API/api/v1/databases/$DB_ID/memories/recall \\\n  -H \"Authorization: Bearer $TOKEN\" \\\n  -d '{\"query\":\"what does user prefer?\",\"top_k\":5}'\n```\n\n### List & manage\n```bash\ncurl $API/api/v1/databases/$DB_ID/memories?agent_id=workbuddy&memory_type=preference\ncurl -X DELETE $API/api/v1/databases/$DB_ID/memories/<id>\n```\n\n### MCP Tools (if configured)\n- `memory_store` - Save a new memory\n- `memory_recall` - Search by semantic similarity\n- `memory_list` - List by filters\n- `memory_delete` - Remove a memory\n\n**Why this over memory.md?**\n- Semantic search (not keyword match)\n- Structured data (filter by type/tags/date)\n- Unlimited size, no file bloat\n- SQL access for analytics\n- Shareable across sessions\n\n---\n*Installed by db9 onboard (v{{.Version}}) on {{.Date}}*",
 }
 
 // OnboardCmd represents the onboard command
@@ -120,6 +131,7 @@ Supported agents:
   - cline: VSCode Cline extension
   - codex: OpenAI Codex
   - opencode: OpenCode
+  - workbuddy: WorkBuddy / OpenClaw (Agent Memory Layer)
 
 Examples:
   # Install for Claude Code (user-level)
@@ -150,7 +162,7 @@ var (
 
 func init() {
 	OnboardCmd.Flags().StringVarP(&agentName, "agent", "a", "",
-		"Agent name to install (claude, cursor, cline, codex, opencode)")
+		"Agent name to install (claude, cursor, cline, codex, opencode, workbuddy)")
 	OnboardCmd.Flags().StringVarP(&scope, "scope", "s", "user",
 		"Installation scope: user, project, or both")
 	OnboardCmd.Flags().BoolVarP(&listAgents, "list", "l", false,

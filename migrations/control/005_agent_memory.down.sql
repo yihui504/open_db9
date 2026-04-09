@@ -1,0 +1,12 @@
+DROP TRIGGER IF EXISTS update_memories_updated_at ON agent_memories;
+DROP FUNCTION IF EXISTS update_memory_updated_at();
+DROP INDEX IF EXISTS idx_embeddings_vector;
+DROP INDEX IF EXISTS idx_memories_tags;
+DROP INDEX IF EXISTS idx_memories_last_accessed;
+DROP INDEX IF EXISTS idx_memories_created_at;
+DROP INDEX IF EXISTS idx_memories_importance;
+DROP INDEX IF EXISTS idx_memories_type;
+DROP INDEX IF EXISTS idx_memories_session_id;
+DROP INDEX IF EXISTS idx_memories_agent_id;
+DROP TABLE IF EXISTS memory_embeddings;
+DROP TABLE IF EXISTS agent_memories;

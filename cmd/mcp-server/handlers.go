@@ -160,6 +160,90 @@ func registerTools(s *mcpserver.MCPServer) {
 			mcp.Description("ID of the snapshot to restore from"),
 		),
 	), handleRestoreSnapshot)
+
+	// Memory store tool
+	s.AddTool(mcp.NewTool("memory_store",
+		mcp.WithDescription("Store a new memory in the agent memory system. Memories are persisted in PostgreSQL and can be retrieved via semantic search."),
+		mcp.WithString("database_id",
+			mcp.Required(),
+			mcp.Description("The database ID to store the memory in"),
+		),
+		mcp.WithString("content",
+			mcp.Required(),
+			mcp.Description("Memory text content to store"),
+		),
+		mcp.WithString("memory_type",
+			mcp.Description("Type of memory: fact, preference, context, decision, error, observation, plan (default: fact)"),
+		),
+		mcp.WithString("tags",
+			mcp.Description("Comma-separated tags for categorization and filtering (e.g., 'tech,frontend,critical')"),
+		),
+		mcp.WithNumber("importance_score",
+			mcp.Description("Importance score between 0.0 and 1.0 (default: 0.5). Higher values indicate more critical memories."),
+		),
+		mcp.WithString("session_id",
+			mcp.Description("Optional session ID to group related memories"),
+		),
+		mcp.WithString("agent_id",
+			mcp.Description("Agent identifier for multi-agent setups (default: default)"),
+		),
+	), handleMemoryStore)
+
+	// Memory recall tool
+	s.AddTool(mcp.NewTool("memory_recall",
+		mcp.WithDescription("Semantically search and retrieve memories using natural language queries. Returns the most relevant memories based on content similarity."),
+		mcp.WithString("database_id",
+			mcp.Required(),
+			mcp.Description("The database ID to search memories in"),
+		),
+		mcp.WithString("query",
+			mcp.Required(),
+			mcp.Description("Natural language query to search for relevant memories"),
+		),
+		mcp.WithNumber("top_k",
+			mcp.Description("Number of results to return (default: 5, max: 50)"),
+		),
+		mcp.WithString("filter.agent_id",
+			mcp.Description("Filter results by agent ID"),
+		),
+		mcp.WithString("filter.memory_type",
+			mcp.Description("Filter results by memory type (fact, preference, context, etc.)"),
+		),
+		mcp.WithString("filter.tags",
+			mcp.Description("Comma-separated tags to filter results by"),
+		),
+	), handleMemoryRecall)
+
+	// Memory list tool
+	s.AddTool(mcp.NewTool("memory_list",
+		mcp.WithDescription("List all stored memories with optional filtering by agent, type, or tags. Returns up to 100 memories ordered by creation time."),
+		mcp.WithString("database_id",
+			mcp.Required(),
+			mcp.Description("The database ID to list memories from"),
+		),
+		mcp.WithString("agent_id",
+			mcp.Description("Filter memories by agent ID"),
+		),
+		mcp.WithString("memory_type",
+			mcp.Description("Filter memories by type (fact, preference, context, etc.)"),
+		),
+		mcp.WithString("tags",
+			mcp.Description("Comma-separated tags to filter memories by"),
+		),
+	), handleMemoryList)
+
+	// Memory delete tool
+	s.AddTool(mcp.NewTool("memory_delete",
+		mcp.WithDescription("Delete a specific memory by its unique ID. This operation is irreversible."),
+		mcp.WithString("database_id",
+			mcp.Required(),
+			mcp.Description("The database ID where the memory is stored"),
+		),
+		mcp.WithString("id",
+			mcp.Required(),
+			mcp.Description("Unique ID (UUID) of the memory to delete"),
+		),
+	), handleMemoryDelete)
 }
 
 // handleExecuteSQL handles SQL execution requests
@@ -518,6 +602,219 @@ func handleRestoreSnapshot(ctx context.Context, request mcp.CallToolRequest) (*m
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf("Snapshot restoration initiated:\n%s", string(resultJSON))), nil
+}
+
+// handleMemoryStore handles storing a new memory
+func handleMemoryStore(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	dbID, err := request.RequireString("database_id")
+	if err != nil {
+		return mcp.NewToolResultError("database_id is required"), nil
+	}
+
+	content, err := request.RequireString("content")
+	if err != nil {
+		return mcp.NewToolResultError("content is required"), nil
+	}
+
+	memoryType := getStringArg(request, "memory_type", "fact")
+	agentID := getStringArg(request, "agent_id", "")
+	sessionID := getStringArg(request, "session_id", "")
+
+	importanceScore := 0.5
+	args := request.Params.Arguments
+	argsMap, _ := args.(map[string]interface{})
+	if is, ok := argsMap["importance_score"]; ok && is != nil {
+		importanceScore = is.(float64)
+	}
+
+	// Parse tags from comma-separated string
+	var tags []string
+	if tagsStr, ok := argsMap["tags"]; ok && tagsStr != nil {
+		if tagStr, ok := tagsStr.(string); ok && tagStr != "" {
+			for _, t := range strings.Split(tagStr, ",") {
+				t = strings.TrimSpace(t)
+				if t != "" {
+					tags = append(tags, t)
+				}
+			}
+		}
+	}
+
+	reqBody := map[string]interface{}{
+		"content":          content,
+		"memory_type":      memoryType,
+		"importance_score": importanceScore,
+	}
+	if agentID != "" {
+		reqBody["agent_id"] = agentID
+	}
+	if sessionID != "" {
+		reqBody["session_id"] = sessionID
+	}
+	if len(tags) > 0 {
+		reqBody["tags"] = tags
+	}
+
+	log.Printf("[memory_store] Database: %s, Type: %s, Content: %s", dbID, memoryType, truncateSQL(content))
+
+	resp, err := client.Do("POST", fmt.Sprintf("/api/v1/databases/%s/memories", dbID), reqBody)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to store memory: %v", err)), nil
+	}
+
+	if !resp.Success && resp.Error != "" {
+		return mcp.NewToolResultError(fmt.Sprintf("Memory store error: %s", resp.Error)), nil
+	}
+
+	resultJSON, err := json.MarshalIndent(resp.Data, "", "  ")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to format results: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Memory stored successfully:\n%s", string(resultJSON))), nil
+}
+
+// handleMemoryRecall handles semantic memory recall/search
+func handleMemoryRecall(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	dbID, err := request.RequireString("database_id")
+	if err != nil {
+		return mcp.NewToolResultError("database_id is required"), nil
+	}
+
+	query, err := request.RequireString("query")
+	if err != nil {
+		return mcp.NewToolResultError("query is required"), nil
+	}
+
+	topK := 5
+	args := request.Params.Arguments
+	argsMap, _ := args.(map[string]interface{})
+	if tk, ok := argsMap["top_k"]; ok && tk != nil {
+		topK = int(tk.(float64))
+	}
+
+	// Build filter from optional parameters
+	filter := map[string]interface{}{}
+	if filterAgentID := getStringArg(request, "filter.agent_id", ""); filterAgentID != "" {
+		filter["agent_id"] = filterAgentID
+	}
+	if filterMemType := getStringArg(request, "filter.memory_type", ""); filterMemType != "" {
+		filter["memory_type"] = filterMemType
+	}
+	if filterTagsStr, ok := argsMap["filter.tags"]; ok && filterTagsStr != nil {
+		if tagStr, ok := filterTagsStr.(string); ok && tagStr != "" {
+			var tags []string
+			for _, t := range strings.Split(tagStr, ",") {
+				t = strings.TrimSpace(t)
+				if t != "" {
+					tags = append(tags, t)
+				}
+			}
+			if len(tags) > 0 {
+				filter["tags"] = tags
+			}
+		}
+	}
+
+	reqBody := map[string]interface{}{
+		"query": query,
+		"top_k": topK,
+	}
+	if len(filter) > 0 {
+		reqBody["filter"] = filter
+	}
+
+	log.Printf("[memory_recall] Database: %s, Query: %s, TopK: %d", dbID, truncateSQL(query), topK)
+
+	resp, err := client.Do("POST", fmt.Sprintf("/api/v1/databases/%s/memories/recall", dbID), reqBody)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to recall memories: %v", err)), nil
+	}
+
+	if !resp.Success && resp.Error != "" {
+		return mcp.NewToolResultError(fmt.Sprintf("Memory recall error: %s", resp.Error)), nil
+	}
+
+	resultJSON, err := json.MarshalIndent(resp.Data, "", "  ")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to format results: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(string(resultJSON)), nil
+}
+
+// handleMemoryList handles listing memories with filters
+func handleMemoryList(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	dbID, err := request.RequireString("database_id")
+	if err != nil {
+		return mcp.NewToolResultError("database_id is required"), nil
+	}
+
+	urlPath := fmt.Sprintf("/api/v1/databases/%s/memories", dbID)
+
+	// Build query parameters
+	params := []string{}
+	if agentID := getStringArg(request, "agent_id", ""); agentID != "" {
+		params = append(params, "agent_id="+agentID)
+	}
+	if memType := getStringArg(request, "memory_type", ""); memType != "" {
+		params = append(params, "memory_type="+memType)
+	}
+	if tags := getStringArg(request, "tags", ""); tags != "" {
+		params = append(params, "tags="+tags)
+	}
+	if len(params) > 0 {
+		urlPath += "?" + strings.Join(params, "&")
+	}
+
+	log.Printf("[memory_list] Database: %s", dbID)
+
+	resp, err := client.Do("GET", urlPath, nil)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to list memories: %v", err)), nil
+	}
+
+	if !resp.Success && resp.Error != "" {
+		return mcp.NewToolResultError(fmt.Sprintf("Memory list error: %s", resp.Error)), nil
+	}
+
+	resultJSON, err := json.MarshalIndent(resp.Data, "", "  ")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to format results: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(string(resultJSON)), nil
+}
+
+// handleMemoryDelete handles deleting a memory by ID
+func handleMemoryDelete(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	dbID, err := request.RequireString("database_id")
+	if err != nil {
+		return mcp.NewToolResultError("database_id is required"), nil
+	}
+
+	memoryID, err := request.RequireString("id")
+	if err != nil {
+		return mcp.NewToolResultError("id (memory UUID) is required"), nil
+	}
+
+	log.Printf("[memory_delete] Database: %s, MemoryID: %s", dbID, memoryID)
+
+	resp, err := client.Do("DELETE", fmt.Sprintf("/api/v1/databases/%s/memories/%s", dbID, memoryID), nil)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to delete memory: %v", err)), nil
+	}
+
+	if !resp.Success && resp.Error != "" {
+		return mcp.NewToolResultError(fmt.Sprintf("Memory delete error: %s", resp.Error)), nil
+	}
+
+	resultJSON, err := json.MarshalIndent(resp.Data, "", "  ")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to format results: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Memory deleted successfully:\n%s", string(resultJSON))), nil
 }
 
 // Helper functions

@@ -167,6 +167,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		handleRAG(w, r)
 	case "http":
 		handleHTTPExtension(w, r)
+	case "memories":
+		handleMemories(w, r)
 	default:
 		http.Error(w, "Not found", http.StatusNotFound)
 	}
@@ -524,6 +526,55 @@ func handleRAG(w http.ResponseWriter, r *http.Request) {
 			handlers.DeleteDocumentHandler(w, r)
 		case http.MethodPatch:
 			handlers.UpdateDocumentChunkCountHandler(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+		return
+	}
+
+	http.Error(w, "Not found", http.StatusNotFound)
+}
+
+// handleMemories routes memory storage and retrieval requests
+// POST   /api/v1/databases/:id/memories       - Store a new memory
+// GET    /api/v1/databases/:id/memories       - List memories (with filters)
+// POST   /api/v1/databases/:id/memories/recall - Semantic recall search
+// DELETE /api/v1/databases/:id/memories/:id     - Delete a specific memory
+func handleMemories(w http.ResponseWriter, r *http.Request) {
+	prefix := "/api/v1/databases/"
+	rest := strings.TrimPrefix(r.URL.Path, prefix)
+	parts := strings.Split(rest, "/")
+
+	if len(parts) < 2 || parts[1] != "memories" {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+
+	if len(parts) == 2 {
+		switch r.Method {
+		case http.MethodPost:
+			handlers.StoreMemoryHandler(w, r)
+		case http.MethodGet:
+			handlers.ListMemoriesHandler(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+		return
+	}
+
+	if len(parts) == 3 && parts[2] == "recall" {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		handlers.RecallMemoryHandler(w, r)
+		return
+	}
+
+	if len(parts) == 3 {
+		switch r.Method {
+		case http.MethodDelete:
+			handlers.DeleteMemoryHandler(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
