@@ -23,7 +23,12 @@ echo ""
 
 API="http://localhost:8080"
 RAG="http://localhost:8001"
-JWT_SECRET="db9-local-jwt-hmac-key-2026-alpha-xkcd"
+JWT_SECRET="${JWT_SECRET:-}"
+if [ -z "$JWT_SECRET" ]; then
+    log_err "JWT_SECRET environment variable is not set. Please set it before running this script."
+    echo "  Example: export JWT_SECRET=<your-secret-key>"
+    exit 1
+fi
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 if [ ! -f "$PROJECT_DIR/deployments/docker/docker-compose.yml" ]; then

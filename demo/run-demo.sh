@@ -6,7 +6,12 @@ export LC_ALL=en_US.UTF-8
 API="http://localhost:8080"
 RAG="http://localhost:8001"
 
-JWT_SECRET="db9-local-jwt-hmac-key-2026-alpha-xkcd"
+JWT_SECRET="${JWT_SECRET:-}"
+if [ -z "$JWT_SECRET" ]; then
+    echo "ERROR: JWT_SECRET environment variable is not set. Please set it before running."
+    echo "  Example: export JWT_SECRET=<your-secret-key>"
+    exit 1
+fi
 
 echo "============================================================"
 echo "  Step 1/13: Generate JWT Token"
