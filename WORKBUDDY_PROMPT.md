@@ -153,10 +153,12 @@ curl http://localhost:8080/health
 #### 步骤 2：获取认证 Token
 
 ```bash
-# 生成 JWT Token（使用默认密钥）
+# 生成 JWT Token（从环境变量读取密钥）
 TOKEN=$(python3 -c "
-import jwt, time
-secret = 'db9-local-jwt-hmac-key-2026-alpha-xkcd'
+import jwt, time, os
+secret = os.environ.get('JWT_SECRET', '')
+if not secret:
+    raise ValueError('JWT_SECRET environment variable must be set')
 payload = {
     'sub': 'workbuddy-agent',
     'user_id': 1,

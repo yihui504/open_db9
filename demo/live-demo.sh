@@ -1,8 +1,34 @@
 #!/bin/bash
+JWT_SECRET="${JWT_SECRET:-}"
 API="http://localhost:8080"
 RAG="http://localhost:8001"
-TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vLXVzZXIiLCJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImRlbW8iLCJ0ZW5hbnRfaWQiOiJhMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDEiLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3NzUzNzkwNjcsImlhdCI6MTc3NTM3NTQ2N30.NygEcj_MVQi5P2SW3jAcBSm03a1uJK-EiY6j6OhT38s"
 DB_ID="b0000000-0000-0000-0000-000000000001"
+
+if [ -z "$JWT_SECRET" ]; then
+  echo "ERROR: JWT_SECRET environment variable is not set. Please set it before running this script."
+  echo "  Example: export JWT_SECRET=<your-secret-key>"
+  exit 1
+fi
+
+TOKEN=$(python3 -c "
+import jwt, time
+secret = '$JWT_SECRET'
+payload = {
+    'sub': 'demo-user',
+    'user_id': 1,
+    'username': 'demo',
+    'tenant_id': 'a0000000-0000-0000-0000-000000000001',
+    'role': 'admin',
+    'exp': int(time.time()) + 3600,
+    'iat': int(time.time())
+}
+print(jwt.encode(payload, secret, algorithm='HS256'))
+" 2>/dev/null)
+
+if [ -z "$TOKEN" ] || [ "${TOKEN:0:5}" = "ERROR" ]; then
+  echo "ERROR: Failed to generate JWT token. Ensure PyJWT is installed (pip install PyJWT)."
+  exit 1
+fi
 
 json_fmt() { python3 -m json.tool 2>/dev/null || cat; }
 AUTH="-H Authorization: Bearer $TOKEN"
